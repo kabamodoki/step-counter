@@ -9,7 +9,7 @@ step-counter/
     ├── app/       … JavaFX画面・起動処理
     ├── git/       … git clone/fetch実行
     ├── scanner/   … 除外パターン適用のファイル走査
-    ├── template/  … テンプレート定義（Java/Salesforce/TypeScript）
+    ├── template/  … テンプレート定義（Java/Salesforce/TypeScript/Python/Kotlin/Swift）
     ├── counter/   … 全量/実質モードのステップカウント
     ├── diff/      … ブランチ間の差分ステップ算出
     ├── report/    … HTMLレポート生成
@@ -21,7 +21,7 @@ step-counter/
 - **全量ステップカウンター**: 指定ブランチをclone → ファイル単位・合計のステップ数を表示
 - **差分ステップカウンター**: ブランチA・ブランチBをclone → ファイル単位で追加/削除ステップ数を比較
 - **除外設定**: 画面上でフォルダ・ファイルの除外パターンを都度設定（保存はしない）
-- **テンプレート**: Java / Salesforce / TypeScript(Node,Yarn) の3種を用意。選択すると各言語向けのデフォルト除外・コメント判定ルールが自動適用される
+- **テンプレート**: Java / Salesforce / TypeScript(Node,Yarn) / Python / Kotlin / Swift の6種を用意。選択すると各言語向けのデフォルト除外・コメント判定ルールが自動適用される
 - **集計モード切替**: 全量モード（コメント・空行含む）／実質モード（コメント・空行を除く）
 - **HTMLエクスポート**: 実行結果を自己完結型HTMLレポート（外部通信なし）として保存
 
@@ -71,8 +71,13 @@ java -jar target/step-counter.jar
 | Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `mvnw`, `mvnw.cmd`, `gradlew`, `gradlew.bat`, `.mvn/`, `gradle/`, `lombok.config` |
 | Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/`, `*Test.cls`、＋チェックボックス未チェック時のみ: `**/profiles/`, `**/permissionsets/`, `**/permissionsetgroups/` |
 | TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts`, `**/__tests__/`, `*.spec.ts`, `*.spec.tsx`, `*.spec.js`, `*.spec.jsx`, `*.test.ts`, `*.test.tsx`, `*.test.js`, `*.test.jsx` |
+| Python | `__pycache__/`, `.venv/`, `venv/`, `env/`, `.pytest_cache/`, `.mypy_cache/`, `.tox/`, `dist/`, `build/`, `*.egg-info/`, `*.pyc`, `pyproject.toml`, `setup.py`, `setup.cfg`, `requirements*.txt`, `Pipfile`, `Pipfile.lock`, `poetry.lock`, `tests/`, `test_*.py`, `*_test.py` |
+| Kotlin | `build/`, `.gradle/`, `gradle/`, `gradlew`, `gradlew.bat`, `settings.gradle.kts`, `build.gradle.kts`, `src/test/`, `*Test.kt` |
+| Swift | `.build/`, `DerivedData/`, `*.xcodeproj/`, `*.xcworkspace/`, `Pods/`, `Package.resolved`, `Package.swift`, `Tests/`, `*Tests.swift` |
 
 `*Test.cls`について: Apexは対象クラス名+`Test`という命名規則（例: `AccountServiceTest.cls`）を前提に除外している。プレフィックス型（`Test_Foo.cls`）や`@isTest`アノテーションでの判定は非対応。
+
+Pythonのdocstring（`"""..."""`）は実質モードでも除外していない（通常の文字列リテラルとの区別が簡易ロジックでは困難なため、コードとして扱う）。
 
 テンプレートの追加・保存機能は用意していません（3テンプレートを作り込みで対応する方針）。
 
@@ -94,6 +99,8 @@ java -jar target/step-counter.jar
   - `LineCounterManualCheck` — 行内コメント判定のエッジケース確認
   - `ReportPreviewGenerator` — サンプルデータでHTMLレポートを生成
   - `EndToEndSmokeRunner` — 実リポジトリに対してclone→スキャン→差分算出まで通して確認
-  - `CommonExcludeManualCheck` — 共通除外・Javaのビルド設定除外の確認
+  - `CommonExcludeManualCheck` — 全テンプレート（Java/Salesforce/TypeScript/Python/Kotlin/Swift）の除外パターン確認
   - `FileNameGenerationManualCheck` — エクスポートファイル名の自動生成ロジックの確認
   - `ErrorLoggerManualCheck` — エラーログ出力の確認
+  - `NonUtf8FileManualCheck` — 非UTF-8ファイル読み込み時の挙動確認
+  - `PythonCommentManualCheck` — Pythonの`#`コメント判定・docstring非除外の確認

@@ -3,7 +3,10 @@ package com.stepcounter.template;
 public enum TemplateType {
     JAVA("Java"),
     SALESFORCE("Salesforce"),
-    TYPESCRIPT("TypeScript (Node/Yarn)");
+    TYPESCRIPT("TypeScript (Node/Yarn)"),
+    PYTHON("Python"),
+    KOTLIN("Kotlin"),
+    SWIFT("Swift");
 
     private final String label;
 

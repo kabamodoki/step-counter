@@ -106,11 +106,54 @@ public class TemplateDefinition {
                 CommentStyle.cStyle());
     }
 
+    public static TemplateDefinition python() {
+        Map<String, CommentStyle> byExt = new LinkedHashMap<>();
+        byExt.put("py", CommentStyle.hashStyle());
+        return new TemplateDefinition(
+                TemplateType.PYTHON,
+                List.of("__pycache__/", ".venv/", "venv/", "env/", ".pytest_cache/", ".mypy_cache/", ".tox/",
+                        "dist/", "build/", "*.egg-info/", "*.pyc",
+                        "pyproject.toml", "setup.py", "setup.cfg", "requirements*.txt",
+                        "Pipfile", "Pipfile.lock", "poetry.lock",
+                        "tests/", "test_*.py", "*_test.py"),
+                List.of(), null,
+                byExt,
+                CommentStyle.hashStyle());
+    }
+
+    public static TemplateDefinition kotlin() {
+        Map<String, CommentStyle> byExt = new LinkedHashMap<>();
+        byExt.put("kt", CommentStyle.cStyle());
+        byExt.put("kts", CommentStyle.cStyle());
+        return new TemplateDefinition(
+                TemplateType.KOTLIN,
+                List.of("build/", ".gradle/", "gradle/", "gradlew", "gradlew.bat",
+                        "settings.gradle.kts", "build.gradle.kts", "src/test/", "*Test.kt"),
+                List.of(), null,
+                byExt,
+                CommentStyle.cStyle());
+    }
+
+    public static TemplateDefinition swift() {
+        Map<String, CommentStyle> byExt = new LinkedHashMap<>();
+        byExt.put("swift", CommentStyle.cStyle());
+        return new TemplateDefinition(
+                TemplateType.SWIFT,
+                List.of(".build/", "DerivedData/", "*.xcodeproj/", "*.xcworkspace/", "Pods/",
+                        "Package.resolved", "Package.swift", "Tests/", "*Tests.swift"),
+                List.of(), null,
+                byExt,
+                CommentStyle.cStyle());
+    }
+
     public static TemplateDefinition forType(TemplateType type) {
         return switch (type) {
             case JAVA -> java();
             case SALESFORCE -> salesforce();
             case TYPESCRIPT -> typescript();
+            case PYTHON -> python();
+            case KOTLIN -> kotlin();
+            case SWIFT -> swift();
         };
     }
 }

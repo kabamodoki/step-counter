@@ -87,6 +87,44 @@ public final class CommonExcludeManualCheck {
         );
         allOk &= checkAll("Salesforce (checkbox checked)", withCheckboxChecked, sfCheckedCases);
 
+        TemplateDefinition py = TemplateDefinition.python();
+        Map<String, Boolean> pyCases = Map.ofEntries(
+                Map.entry("app/__pycache__/main.cpython-311.pyc", true),
+                Map.entry(".venv/lib/site-packages/foo.py", true),
+                Map.entry("pyproject.toml", true),
+                Map.entry("requirements.txt", true),
+                Map.entry("requirements-dev.txt", true),
+                Map.entry("Pipfile.lock", true),
+                Map.entry("tests/test_app.py", true),
+                Map.entry("app/test_utils.py", true),
+                Map.entry("app/utils_test.py", true),
+                Map.entry("app/main.py", false)
+        );
+        allOk &= checkAll("Python", py.getDefaultExcludes(), pyCases);
+
+        TemplateDefinition kt = TemplateDefinition.kotlin();
+        Map<String, Boolean> ktCases = Map.ofEntries(
+                Map.entry("build/classes/MainKt.class", true),
+                Map.entry("gradlew", true),
+                Map.entry("build.gradle.kts", true),
+                Map.entry("src/test/kotlin/com/example/AppTest.kt", true),
+                Map.entry("src/main/kotlin/com/example/AppTest.kt", true),
+                Map.entry("src/main/kotlin/com/example/App.kt", false)
+        );
+        allOk &= checkAll("Kotlin", kt.getDefaultExcludes(), ktCases);
+
+        TemplateDefinition sw = TemplateDefinition.swift();
+        Map<String, Boolean> swCases = Map.ofEntries(
+                Map.entry(".build/checkouts/foo", true),
+                Map.entry("MyApp.xcodeproj/project.pbxproj", true),
+                Map.entry("Pods/Alamofire/Alamofire.swift", true),
+                Map.entry("Package.swift", true),
+                Map.entry("Tests/MyAppTests/MyAppTests.swift", true),
+                Map.entry("Sources/MyApp/FeatureTests.swift", true),
+                Map.entry("Sources/MyApp/Feature.swift", false)
+        );
+        allOk &= checkAll("Swift", sw.getDefaultExcludes(), swCases);
+
         System.out.println(allOk ? "ALL OK" : "SOME MISMATCHES");
         if (!allOk) {
             System.exit(1);

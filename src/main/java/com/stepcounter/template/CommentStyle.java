@@ -34,8 +34,14 @@ public class CommentStyle {
         return blockCommentStart != null && blockCommentEnd != null;
     }
 
-    /** Line comments and block comments, C-style — Java, TypeScript, Apex classes/triggers, LWC/Aura JS. */
+    /** Line comments and block comments, C-style — Java, TypeScript, Apex classes/triggers, LWC/Aura JS, Kotlin, Swift. */
     public static CommentStyle cStyle() {
         return new CommentStyle(List.of("//"), "/*", "*/");
+    }
+
+    /** Line comments only, Python-style. No block-comment marker: docstrings are triple-quoted
+     *  strings, not a distinct comment construct, so they're intentionally left uncounted as comments. */
+    public static CommentStyle hashStyle() {
+        return new CommentStyle(List.of("#"), null, null);
     }
 }
