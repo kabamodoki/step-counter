@@ -1,5 +1,6 @@
 package com.stepcounter.template;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,16 +8,21 @@ import java.util.Map;
 /** Per-template defaults: which folders/files to exclude, and how to recognize comment lines per extension. */
 public class TemplateDefinition {
 
+    /** Applied on top of every template's own excludes: CI config, docs, and dotfiles are never "steps". */
+    private static final List<String> COMMON_EXCLUDES = List.of(".github/", "README*", ".*");
+
     private final TemplateType type;
     private final List<String> defaultExcludes;
     private final Map<String, CommentStyle> commentStyleByExtension;
     private final CommentStyle fallbackStyle;
 
-    private TemplateDefinition(TemplateType type, List<String> defaultExcludes,
+    private TemplateDefinition(TemplateType type, List<String> templateExcludes,
                                 Map<String, CommentStyle> commentStyleByExtension,
                                 CommentStyle fallbackStyle) {
         this.type = type;
-        this.defaultExcludes = defaultExcludes;
+        List<String> merged = new ArrayList<>(COMMON_EXCLUDES);
+        merged.addAll(templateExcludes);
+        this.defaultExcludes = List.copyOf(merged);
         this.commentStyleByExtension = commentStyleByExtension;
         this.fallbackStyle = fallbackStyle;
     }
@@ -41,7 +47,9 @@ public class TemplateDefinition {
         byExt.put("java", CommentStyle.cStyle());
         return new TemplateDefinition(
                 TemplateType.JAVA,
-                List.of("target/", "src/test/", "src/main/resources/", ".git/", "*.class"),
+                List.of("target/", "src/test/", "src/main/resources/", ".git/", "*.class",
+                        "pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
+                        "mvnw", "mvnw.cmd", "gradlew", "gradlew.bat", ".mvn/", "gradle/", "lombok.config"),
                 byExt,
                 CommentStyle.cStyle());
     }
