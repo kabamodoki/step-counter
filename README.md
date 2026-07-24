@@ -52,9 +52,19 @@ java -jar target/step-counter.jar
 
 ## テンプレートのデフォルト除外
 
-| テンプレート | デフォルト除外 |
+全テンプレート共通で、以下は常にデフォルト除外に含まれる。
+
+| パターン | 対象 |
 |---|---|
-| Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class` |
+| `.github/` | GitHub Actions等のワークフロー定義 |
+| `README*` | README.md 等のドキュメント |
+| `.*` | `.gitignore`, `.gitkeep`, `.env` などドットファイル全般 |
+
+テンプレートごとの追加除外:
+
+| テンプレート | 追加のデフォルト除外 |
+|---|---|
+| Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `mvnw`, `mvnw.cmd`, `gradlew`, `gradlew.bat`, `.mvn/`, `gradle/`, `lombok.config` |
 | Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/` |
 | TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts` |
 
