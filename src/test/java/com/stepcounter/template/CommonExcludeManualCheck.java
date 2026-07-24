@@ -62,9 +62,30 @@ public final class CommonExcludeManualCheck {
                 Map.entry("force-app/main/default/staticresources/logo.resource", true),
                 Map.entry("force-app/main/default/lwc/myComponent/__tests__/myComponent.test.js", true),
                 Map.entry("force-app/main/default/lwc/myComponent/myComponent.js", false),
-                Map.entry("force-app/main/default/classes/MyClass.cls", false)
+                Map.entry("force-app/main/default/classes/MyClass.cls", false),
+                Map.entry("force-app/main/default/classes/AccountServiceTest.cls", true),
+                // default (checkbox unchecked): profiles/permission sets are excluded
+                Map.entry("force-app/main/default/profiles/Admin.profile-meta.xml", true),
+                Map.entry("force-app/main/default/permissionsets/MyPerm.permissionset-meta.xml", true)
         );
-        allOk &= checkAll("Salesforce", sf.getDefaultExcludes(), sfCases);
+        allOk &= checkAll("Salesforce (default)", sf.getDefaultExcludes(), sfCases);
+
+        if (!sf.getOptionalExcludeLabel().equals("プロファイル/パーミッション系を含める")) {
+            throw new AssertionError("unexpected optional exclude label: " + sf.getOptionalExcludeLabel());
+        }
+        if (!sf.getOptionalExcludes().equals(List.of("**/profiles/", "**/permissionsets/", "**/permissionsetgroups/"))) {
+            throw new AssertionError("unexpected optional excludes: " + sf.getOptionalExcludes());
+        }
+
+        // simulate the checkbox being checked: UI removes optionalExcludes from the active list
+        List<String> withCheckboxChecked = new java.util.ArrayList<>(sf.getDefaultExcludes());
+        withCheckboxChecked.removeAll(sf.getOptionalExcludes());
+        Map<String, Boolean> sfCheckedCases = Map.ofEntries(
+                Map.entry("force-app/main/default/profiles/Admin.profile-meta.xml", false),
+                Map.entry("force-app/main/default/permissionsets/MyPerm.permissionset-meta.xml", false),
+                Map.entry("force-app/main/default/classes/AccountServiceTest.cls", true)
+        );
+        allOk &= checkAll("Salesforce (checkbox checked)", withCheckboxChecked, sfCheckedCases);
 
         System.out.println(allOk ? "ALL OK" : "SOME MISMATCHES");
         if (!allOk) {

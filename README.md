@@ -46,6 +46,7 @@ java -jar target/step-counter.jar
 1. モードを選択（全量 / 差分）
 2. リポジトリURLとブランチ（差分モードはブランチA・ブランチB）を入力
 3. テンプレートを選択 → 除外パターンが自動入力される（この画面内でのみ有効。追加・削除・編集も可能）
+   - Salesforce選択時のみ「プロファイル/パーミッション系を含める」チェックボックスが表示される。未チェック（デフォルト）だと`profiles/`・`permissionsets/`・`permissionsetgroups/`が除外される
 4. 集計モード（全量 / 実質）を選択
 5. 「実行」→ 結果テーブルが表示される。ファイル名欄に `{リポジトリ名}-{ブランチ名}.html`（差分モードは `{リポジトリ名}-{ブランチA}-vs-{ブランチB}.html`）が自動入力される（変更可）
 6. 「出力先を選ぶ」でエクスポート先フォルダを1回選択（以降は選び直すまで保持される）
@@ -68,8 +69,10 @@ java -jar target/step-counter.jar
 | テンプレート | 追加のデフォルト除外 |
 |---|---|
 | Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `mvnw`, `mvnw.cmd`, `gradlew`, `gradlew.bat`, `.mvn/`, `gradle/`, `lombok.config` |
-| Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/` |
+| Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/`, `*Test.cls`、＋チェックボックス未チェック時のみ: `**/profiles/`, `**/permissionsets/`, `**/permissionsetgroups/` |
 | TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts`, `**/__tests__/`, `*.spec.ts`, `*.spec.tsx`, `*.spec.js`, `*.spec.jsx`, `*.test.ts`, `*.test.tsx`, `*.test.js`, `*.test.jsx` |
+
+`*Test.cls`について: Apexは対象クラス名+`Test`という命名規則（例: `AccountServiceTest.cls`）を前提に除外している。プレフィックス型（`Test_Foo.cls`）や`@isTest`アノテーションでの判定は非対応。
 
 テンプレートの追加・保存機能は用意していません（3テンプレートを作り込みで対応する方針）。
 

@@ -24,6 +24,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -64,6 +65,7 @@ public class StepCounterApp extends Application {
     private final ObservableList<String> excludePatterns = FXCollections.observableArrayList();
     private final ListView<String> excludeListView = new ListView<>(excludePatterns);
     private final TextField newExcludeField = new TextField();
+    private final CheckBox optionalExcludeCheckBox = new CheckBox();
 
     private final HBox branchRow = new HBox(10);
     private final HBox diffBranchRow = new HBox(10);
@@ -82,6 +84,7 @@ public class StepCounterApp extends Application {
 
     private ScanResult lastScanResult;
     private DiffResult lastDiffResult;
+    private TemplateDefinition currentTemplate;
 
     private final GitOperationService gitService = new GitOperationService();
     private final FileScanner fileScanner = new FileScanner();
@@ -153,6 +156,18 @@ public class StepCounterApp extends Application {
         exportButton.setDisable(outputDirectory == null || !hasResult);
     }
 
+    /** Shows/hides and (re)labels the per-template "include X" checkbox; unchecked = excluded (the default). */
+    private void configureOptionalExcludeCheckBox(TemplateDefinition template) {
+        List<String> optional = template.getOptionalExcludes();
+        boolean hasToggle = !optional.isEmpty();
+        optionalExcludeCheckBox.setVisible(hasToggle);
+        optionalExcludeCheckBox.setManaged(hasToggle);
+        if (hasToggle) {
+            optionalExcludeCheckBox.setText(template.getOptionalExcludeLabel());
+            optionalExcludeCheckBox.setSelected(false);
+        }
+    }
+
     private VBox buildForm() {
         RadioButton fullModeBtn = new RadioButton("全量ステップカウンター");
         fullModeBtn.setToggleGroup(runModeGroup);
@@ -187,7 +202,25 @@ public class StepCounterApp extends Application {
 
         templateCombo.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
             if (newV != null) {
-                excludePatterns.setAll(TemplateDefinition.forType(newV).getDefaultExcludes());
+                currentTemplate = TemplateDefinition.forType(newV);
+                excludePatterns.setAll(currentTemplate.getDefaultExcludes());
+                configureOptionalExcludeCheckBox(currentTemplate);
+            }
+        });
+
+        optionalExcludeCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
+            if (currentTemplate == null) {
+                return;
+            }
+            List<String> optional = currentTemplate.getOptionalExcludes();
+            if (newV) {
+                excludePatterns.removeAll(optional);
+            } else {
+                for (String pattern : optional) {
+                    if (!excludePatterns.contains(pattern)) {
+                        excludePatterns.add(pattern);
+                    }
+                }
             }
         });
 
@@ -233,6 +266,7 @@ public class StepCounterApp extends Application {
                 grid,
                 branchRow,
                 diffBranchRow,
+                optionalExcludeCheckBox,
                 new Label("除外パターン（このセッション限り。保存はしません）:"),
                 excludeListView,
                 excludeEditRow,

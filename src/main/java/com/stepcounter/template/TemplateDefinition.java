@@ -16,16 +16,22 @@ public class TemplateDefinition {
 
     private final TemplateType type;
     private final List<String> defaultExcludes;
+    private final List<String> optionalExcludes;
+    private final String optionalExcludeLabel;
     private final Map<String, CommentStyle> commentStyleByExtension;
     private final CommentStyle fallbackStyle;
 
     private TemplateDefinition(TemplateType type, List<String> templateExcludes,
+                                List<String> optionalExcludes, String optionalExcludeLabel,
                                 Map<String, CommentStyle> commentStyleByExtension,
                                 CommentStyle fallbackStyle) {
         this.type = type;
         List<String> merged = new ArrayList<>(COMMON_EXCLUDES);
         merged.addAll(templateExcludes);
+        merged.addAll(optionalExcludes);
         this.defaultExcludes = List.copyOf(merged);
+        this.optionalExcludes = optionalExcludes;
+        this.optionalExcludeLabel = optionalExcludeLabel;
         this.commentStyleByExtension = commentStyleByExtension;
         this.fallbackStyle = fallbackStyle;
     }
@@ -34,8 +40,19 @@ public class TemplateDefinition {
         return type;
     }
 
+    /** Excludes applied when the template is first selected (baseline + any optional excludes, since those default to "excluded"). */
     public List<String> getDefaultExcludes() {
         return defaultExcludes;
+    }
+
+    /** Patterns toggled by this template's "include X" checkbox, if any (empty when the template has no such toggle). */
+    public List<String> getOptionalExcludes() {
+        return optionalExcludes;
+    }
+
+    /** Label for the optional-excludes checkbox, or {@code null} if this template doesn't have one. */
+    public String getOptionalExcludeLabel() {
+        return optionalExcludeLabel;
     }
 
     public CommentStyle styleFor(String fileName) {
@@ -53,6 +70,7 @@ public class TemplateDefinition {
                 List.of("target/", "src/test/", "src/main/resources/", ".git/", "*.class",
                         "pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts",
                         "mvnw", "mvnw.cmd", "gradlew", "gradlew.bat", ".mvn/", "gradle/", "lombok.config"),
+                List.of(), null,
                 byExt,
                 CommentStyle.cStyle());
     }
@@ -65,7 +83,9 @@ public class TemplateDefinition {
         byExt.put("xml", CommentStyle.NONE);
         return new TemplateDefinition(
                 TemplateType.SALESFORCE,
-                List.of(".sfdx/", "**/staticresources/", "**/lwc/**/__tests__/", ".git/"),
+                List.of(".sfdx/", "**/staticresources/", "**/lwc/**/__tests__/", ".git/", "*Test.cls"),
+                List.of("**/profiles/", "**/permissionsets/", "**/permissionsetgroups/"),
+                "プロファイル/パーミッション系を含める",
                 byExt,
                 CommentStyle.NONE);
     }
@@ -81,6 +101,7 @@ public class TemplateDefinition {
                 List.of("node_modules/", "dist/", "build/", "coverage/", ".git/", "*.d.ts", "**/__tests__/",
                         "*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx",
                         "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx"),
+                List.of(), null,
                 byExt,
                 CommentStyle.cStyle());
     }
