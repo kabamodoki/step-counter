@@ -49,7 +49,11 @@ public final class CommonExcludeManualCheck {
                 Map.entry("src/components/Button.tsx", false),
                 Map.entry("public/logo.png", true),
                 Map.entry("public/favicon.ico", true),
-                Map.entry("LICENSE", true)
+                Map.entry("LICENSE", true),
+                Map.entry("src/components/Button.spec.ts", true),
+                Map.entry("src/components/Button.spec.tsx", true),
+                Map.entry("src/utils/format.test.js", true),
+                Map.entry("src/utils/format.js", false)
         );
         allOk &= checkAll("TypeScript", ts.getDefaultExcludes(), tsCases);
 

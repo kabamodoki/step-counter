@@ -69,7 +69,7 @@ java -jar target/step-counter.jar
 |---|---|
 | Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `mvnw`, `mvnw.cmd`, `gradlew`, `gradlew.bat`, `.mvn/`, `gradle/`, `lombok.config` |
 | Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/` |
-| TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts`, `**/__tests__/` |
+| TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts`, `**/__tests__/`, `*.spec.ts`, `*.spec.tsx`, `*.spec.js`, `*.spec.jsx`, `*.test.ts`, `*.test.tsx`, `*.test.js`, `*.test.jsx` |
 
 テンプレートの追加・保存機能は用意していません（3テンプレートを作り込みで対応する方針）。
 

@@ -78,7 +78,9 @@ public class TemplateDefinition {
         byExt.put("jsx", CommentStyle.cStyle());
         return new TemplateDefinition(
                 TemplateType.TYPESCRIPT,
-                List.of("node_modules/", "dist/", "build/", "coverage/", ".git/", "*.d.ts", "**/__tests__/"),
+                List.of("node_modules/", "dist/", "build/", "coverage/", ".git/", "*.d.ts", "**/__tests__/",
+                        "*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx",
+                        "*.test.ts", "*.test.tsx", "*.test.js", "*.test.jsx"),
                 byExt,
                 CommentStyle.cStyle());
     }
