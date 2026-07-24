@@ -3,8 +3,11 @@ package com.stepcounter.counter;
 import com.stepcounter.model.StepMode;
 import com.stepcounter.template.CommentStyle;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,12 +33,7 @@ public class LineCounter {
      * tokenizer would be needed to close that gap completely.
      */
     public List<String> significantLines(Path file, CommentStyle style, StepMode mode) {
-        List<String> rawLines;
-        try {
-            rawLines = Files.readAllLines(file, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to read " + file, e);
-        }
+        List<String> rawLines = readLinesLeniently(file);
 
         if (mode == StepMode.FULL) {
             return rawLines;
@@ -126,5 +124,27 @@ public class LineCounter {
             }
         }
         return new LineScanResult(hasCode, inBlock);
+    }
+
+    /**
+     * Reads a file as UTF-8, replacing rather than throwing on malformed/unmappable byte
+     * sequences. Real-world repos routinely mix in files saved with another encoding
+     * (Shift-JIS/CP932 is common for older SCSS/CSS/properties files); a strict UTF-8 decode
+     * would blow up the whole scan with a {@code MalformedInputException} over a single bad file.
+     */
+    private List<String> readLinesLeniently(Path file) {
+        var decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Files.newInputStream(file), decoder))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read " + file, e);
+        }
+        return lines;
     }
 }
