@@ -8,8 +8,11 @@ import java.util.Map;
 /** Per-template defaults: which folders/files to exclude, and how to recognize comment lines per extension. */
 public class TemplateDefinition {
 
-    /** Applied on top of every template's own excludes: CI config, docs, and dotfiles are never "steps". */
-    private static final List<String> COMMON_EXCLUDES = List.of(".github/", "README*", ".*");
+    /** Applied on top of every template's own excludes: CI config, docs, dotfiles, and static
+     *  image assets are never "steps", regardless of which template is selected. */
+    private static final List<String> COMMON_EXCLUDES = List.of(
+            ".github/", "README*", "LICENSE*", ".*",
+            "*.svg", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.ico", "*.webp", "*.bmp");
 
     private final TemplateType type;
     private final List<String> defaultExcludes;
@@ -75,7 +78,7 @@ public class TemplateDefinition {
         byExt.put("jsx", CommentStyle.cStyle());
         return new TemplateDefinition(
                 TemplateType.TYPESCRIPT,
-                List.of("node_modules/", "dist/", "build/", "coverage/", ".git/", "*.d.ts"),
+                List.of("node_modules/", "dist/", "build/", "coverage/", ".git/", "*.d.ts", "**/__tests__/"),
                 byExt,
                 CommentStyle.cStyle());
     }

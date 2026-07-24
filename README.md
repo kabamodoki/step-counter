@@ -59,7 +59,9 @@ java -jar target/step-counter.jar
 |---|---|
 | `.github/` | GitHub Actions等のワークフロー定義 |
 | `README*` | README.md 等のドキュメント |
+| `LICENSE*` | LICENSE, LICENSE.md 等 |
 | `.*` | `.gitignore`, `.gitkeep`, `.env` などドットファイル全般 |
+| `*.svg`, `*.png`, `*.jpg`, `*.jpeg`, `*.gif`, `*.ico`, `*.webp`, `*.bmp` | 画像・静的アセット全般 |
 
 テンプレートごとの追加除外:
 
@@ -67,7 +69,7 @@ java -jar target/step-counter.jar
 |---|---|
 | Java | `target/`, `src/test/`, `src/main/resources/`, `.git/`, `*.class`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `settings.gradle`, `settings.gradle.kts`, `mvnw`, `mvnw.cmd`, `gradlew`, `gradlew.bat`, `.mvn/`, `gradle/`, `lombok.config` |
 | Salesforce | `.sfdx/`, `**/staticresources/`, `**/lwc/**/__tests__/`, `.git/` |
-| TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts` |
+| TypeScript(Node/Yarn) | `node_modules/`, `dist/`, `build/`, `coverage/`, `.git/`, `*.d.ts`, `**/__tests__/` |
 
 テンプレートの追加・保存機能は用意していません（3テンプレートを作り込みで対応する方針）。
 

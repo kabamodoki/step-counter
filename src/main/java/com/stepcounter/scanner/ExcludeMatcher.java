@@ -8,9 +8,11 @@ import java.util.List;
 /**
  * Matches a repo-relative path against user/template exclude patterns.
  * Supported pattern forms:
- *  - "target/"          -> directory prefix, matches that folder anywhere in the tree
+ *  - "target/"          -> plain directory prefix, matches that folder anywhere in the tree
  *  - "*.class"           -> glob against the file name
- *  - "**{@literal /}lwc/**{@literal /}__tests__/" -> glob against the full relative path
+ *  - "**{@literal /}lwc/**{@literal /}__tests__/" -> glob directory pattern, matches anything
+ *    under a directory anywhere in the tree whose path satisfies the glob (crosses directory
+ *    boundaries via "**")
  *  - "README.md"         -> exact file name match anywhere in the tree
  */
 public final class ExcludeMatcher {
@@ -29,7 +31,11 @@ public final class ExcludeMatcher {
             }
             if (pattern.endsWith("/")) {
                 String dir = pattern.substring(0, pattern.length() - 1);
-                if (normalized.equals(dir) || normalized.startsWith(dir + "/") || normalized.contains("/" + dir + "/")) {
+                if (dir.contains("*") || dir.contains("?")) {
+                    if (globMatches(normalized, dir + "/**")) {
+                        return true;
+                    }
+                } else if (normalized.equals(dir) || normalized.startsWith(dir + "/") || normalized.contains("/" + dir + "/")) {
                     return true;
                 }
                 continue;
