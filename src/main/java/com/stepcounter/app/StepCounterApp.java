@@ -39,9 +39,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +73,12 @@ public class StepCounterApp extends Application {
     private final Label summaryLabel = new Label();
     private final ProgressIndicator progress = new ProgressIndicator();
     private final Button runButton = new Button("実行");
-    private final Button exportButton = new Button("HTMLエクスポート");
+    private final Button exportButton = new Button("エクスポート");
+
+    private final TextField outputDirField = new TextField();
+    private final Button chooseOutputDirButton = new Button("出力先を選ぶ");
+    private final TextField fileNameField = new TextField();
+    private Path outputDirectory;
 
     private ScanResult lastScanResult;
     private DiffResult lastDiffResult;
@@ -103,15 +109,48 @@ public class StepCounterApp extends Application {
         HBox actions = new HBox(10, runButton, progress, exportButton, summaryLabel);
         actions.setAlignment(Pos.CENTER_LEFT);
         actions.setPadding(new Insets(10, 0, 0, 0));
-        exportButton.setDisable(true);
 
-        VBox bottomWrap = new VBox(actions);
+        outputDirField.setEditable(false);
+        outputDirField.setPromptText("（未設定。先に出力先を選んでください）");
+        HBox.setHgrow(outputDirField, Priority.ALWAYS);
+        HBox outputRow = new HBox(8, new Label("出力先:"), outputDirField, chooseOutputDirButton);
+        outputRow.setAlignment(Pos.CENTER_LEFT);
+
+        fileNameField.setPromptText("実行すると自動入力されます（変更可）");
+        HBox.setHgrow(fileNameField, Priority.ALWAYS);
+        HBox fileNameRow = new HBox(8, new Label("ファイル名:"), fileNameField);
+        fileNameRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox bottomWrap = new VBox(8, outputRow, fileNameRow, actions);
+        bottomWrap.setPadding(new Insets(10, 0, 0, 0));
         root.setBottom(bottomWrap);
+
+        updateExportButtonState();
 
         runButton.setOnAction(e -> onRun());
         exportButton.setOnAction(e -> onExport());
+        chooseOutputDirButton.setOnAction(e -> onChooseOutputDir());
 
         return root;
+    }
+
+    private void onChooseOutputDir() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("出力先フォルダを選択");
+        if (outputDirectory != null) {
+            chooser.setInitialDirectory(outputDirectory.toFile());
+        }
+        File selected = chooser.showDialog(runButton.getScene().getWindow());
+        if (selected != null) {
+            outputDirectory = selected.toPath();
+            outputDirField.setText(outputDirectory.toString());
+            updateExportButtonState();
+        }
+    }
+
+    private void updateExportButtonState() {
+        boolean hasResult = lastScanResult != null || lastDiffResult != null;
+        exportButton.setDisable(outputDirectory == null || !hasResult);
     }
 
     private VBox buildForm() {
@@ -263,7 +302,7 @@ public class StepCounterApp extends Application {
             progress.setVisible(false);
             progress.setManaged(false);
             runButton.setDisable(false);
-            exportButton.setDisable(false);
+            updateExportButtonState();
         });
         task.setOnFailed(e -> {
             progress.setVisible(false);
@@ -340,6 +379,8 @@ public class StepCounterApp extends Application {
                         .sorted((a, b) -> Long.compare(b.getSteps(), a.getSteps()))
                         .toList());
         summaryLabel.setText(String.format("合計 %,d steps / %d ファイル", result.getTotalSteps(), result.getFileCount()));
+        fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranch()) + ".html");
+        updateExportButtonState();
     }
 
     private void applyDiffResult(DiffResult result) {
@@ -348,14 +389,33 @@ public class StepCounterApp extends Application {
         diffTable.getItems().setAll(result.getFiles());
         summaryLabel.setText(String.format("追加 +%,d / 削除 -%,d / %d ファイル",
                 result.getTotalAdded(), result.getTotalDeleted(), result.getFiles().size()));
+        fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranchA())
+                + "-vs-" + sanitizeFileNamePart(result.getBranchB()) + ".html");
+        updateExportButtonState();
+    }
+
+    /** Derives a filesystem-safe short name from a repo URL, e.g. "https://host/acme-orders.git" -> "acme-orders". */
+    static String repoShortName(String repoUrl) {
+        String cleaned = repoUrl.trim();
+        while (cleaned.endsWith("/") || cleaned.endsWith("\\")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 1);
+        }
+        int slash = Math.max(cleaned.lastIndexOf('/'), cleaned.lastIndexOf('\\'));
+        String name = slash >= 0 ? cleaned.substring(slash + 1) : cleaned;
+        if (name.endsWith(".git")) {
+            name = name.substring(0, name.length() - 4);
+        }
+        return sanitizeFileNamePart(name);
+    }
+
+    /** Replaces characters that aren't safe in a Windows file name (branch names may contain "/"). */
+    static String sanitizeFileNamePart(String s) {
+        return s.replaceAll("[\\\\/:*?\"<>|]", "-");
     }
 
     private void onExport() {
-        FileChooser chooser = new FileChooser();
-        chooser.setInitialFileName("step-counter-report.html");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("HTML", "*.html"));
-        java.io.File file = chooser.showSaveDialog(runButton.getScene().getWindow());
-        if (file == null) {
+        if (outputDirectory == null) {
+            showAlert("先に出力先を選んでください。");
             return;
         }
         String html;
@@ -367,8 +427,17 @@ public class StepCounterApp extends Application {
             showAlert("先に実行してください。");
             return;
         }
-        reportGenerator.write(html, file.toPath());
-        showAlert("レポートを出力しました: " + file.getAbsolutePath());
+        String fileName = fileNameField.getText().trim();
+        if (fileName.isEmpty()) {
+            showAlert("ファイル名を入力してください。");
+            return;
+        }
+        if (!fileName.toLowerCase().endsWith(".html")) {
+            fileName = fileName + ".html";
+        }
+        Path outFile = outputDirectory.resolve(fileName);
+        reportGenerator.write(html, outFile);
+        showAlert("レポートを出力しました: " + outFile);
     }
 
     private void showAlert(String message) {
