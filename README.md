@@ -79,9 +79,16 @@ java -jar target/step-counter.jar
 
 ただし文字列リテラル内のコメント記号（例: `String s = "//";`）までは判定していない簡易実装。
 
+## エラーログ
+
+「実行」「エクスポート」でエラーが発生すると、画面のアラートに加えて `logs/step-counter-YYYY-MM-DD.log`（アプリの実行時カレントディレクトリ基準、同日は追記）にタイムスタンプ・発生箇所・例外・スタックトレースを記録する。ログ出力自体が失敗してもアプリは継続動作する。
+
 ## 開発メモ
 
 - `src/test/java` にはJUnitではなく手動確認用のドライバを置いている
   - `LineCounterManualCheck` — 行内コメント判定のエッジケース確認
   - `ReportPreviewGenerator` — サンプルデータでHTMLレポートを生成
   - `EndToEndSmokeRunner` — 実リポジトリに対してclone→スキャン→差分算出まで通して確認
+  - `CommonExcludeManualCheck` — 共通除外・Javaのビルド設定除外の確認
+  - `FileNameGenerationManualCheck` — エクスポートファイル名の自動生成ロジックの確認
+  - `ErrorLoggerManualCheck` — エラーログ出力の確認

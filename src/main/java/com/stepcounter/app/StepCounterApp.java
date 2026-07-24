@@ -309,7 +309,11 @@ public class StepCounterApp extends Application {
             progress.setManaged(false);
             runButton.setDisable(false);
             Throwable ex = task.getException();
-            showAlert("実行に失敗しました: " + (ex != null ? ex.getMessage() : "unknown error"));
+            if (ex != null) {
+                ErrorLogger.log("実行", ex);
+            }
+            showAlert("実行に失敗しました: " + (ex != null ? ex.getMessage() : "unknown error")
+                    + System.lineSeparator() + "ログを出力しました: " + ErrorLogger.currentLogFile());
             summaryLabel.setText("失敗しました");
         });
         Thread thread = new Thread(task, "step-counter-run");
@@ -436,8 +440,14 @@ public class StepCounterApp extends Application {
             fileName = fileName + ".html";
         }
         Path outFile = outputDirectory.resolve(fileName);
-        reportGenerator.write(html, outFile);
-        showAlert("レポートを出力しました: " + outFile);
+        try {
+            reportGenerator.write(html, outFile);
+            showAlert("レポートを出力しました: " + outFile);
+        } catch (RuntimeException ex) {
+            ErrorLogger.log("エクスポート", ex);
+            showAlert("エクスポートに失敗しました: " + ex.getMessage()
+                    + System.lineSeparator() + "ログを出力しました: " + ErrorLogger.currentLogFile());
+        }
     }
 
     private void showAlert(String message) {
