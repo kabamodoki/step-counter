@@ -18,6 +18,7 @@ public final class ReportPreviewGenerator {
 
     public static void main(String[] args) {
         HtmlReportGenerator gen = new HtmlReportGenerator();
+        CsvReportGenerator csvGen = new CsvReportGenerator();
 
         List<FileStepResult> files = List.of(
                 new FileStepResult("src/main/java/com/example/order/OrderService.java", 842),
@@ -35,6 +36,7 @@ public final class ReportPreviewGenerator {
 
         String outDir = args.length > 0 ? args[0] : ".";
         gen.write(gen.buildFullReport(scan), Path.of(outDir, "preview-full.html"));
+        csvGen.write(csvGen.buildFullCsv(scan), Path.of(outDir, "preview-full.csv"));
 
         List<DiffFileResult> diffs = List.of(
                 new DiffFileResult("src/main/java/com/example/order/OrderService.java", 842, 906, 128, 64),
@@ -45,7 +47,8 @@ public final class ReportPreviewGenerator {
                 "https://example.com/acme-orders.git", "main", "feature/order-refactor", "Java",
                 StepMode.FULL, List.of("target/", "src/test/", "src/main/resources/"), diffs);
         gen.write(gen.buildDiffReport(diff), Path.of(outDir, "preview-diff.html"));
+        csvGen.write(csvGen.buildDiffCsv(diff), Path.of(outDir, "preview-diff.csv"));
 
-        System.out.println("wrote preview-full.html and preview-diff.html to " + outDir);
+        System.out.println("wrote preview-full/diff .html and .csv to " + outDir);
     }
 }

@@ -8,6 +8,7 @@ import com.stepcounter.model.DiffResult;
 import com.stepcounter.model.FileStepResult;
 import com.stepcounter.model.ScanResult;
 import com.stepcounter.model.StepMode;
+import com.stepcounter.report.CsvReportGenerator;
 import com.stepcounter.report.HtmlReportGenerator;
 import com.stepcounter.scanner.FileScanner;
 import com.stepcounter.template.TemplateDefinition;
@@ -53,8 +54,19 @@ public class StepCounterApp extends Application {
 
     private enum RunMode { FULL, DIFF }
 
+    private enum ExportFormat {
+        HTML("html"), CSV("csv");
+
+        final String extension;
+
+        ExportFormat(String extension) {
+            this.extension = extension;
+        }
+    }
+
     private final ToggleGroup runModeGroup = new ToggleGroup();
     private final ToggleGroup stepModeGroup = new ToggleGroup();
+    private final ToggleGroup exportFormatGroup = new ToggleGroup();
 
     private final TextField repoUrlField = new TextField();
     private final TextField branchField = new TextField("main");
@@ -93,6 +105,7 @@ public class StepCounterApp extends Application {
     private final LineCounter lineCounter = new LineCounter();
     private final DiffCounter diffCounter = new DiffCounter();
     private final HtmlReportGenerator reportGenerator = new HtmlReportGenerator();
+    private final CsvReportGenerator csvReportGenerator = new CsvReportGenerator();
 
     @Override
     public void start(Stage stage) {
@@ -121,9 +134,20 @@ public class StepCounterApp extends Application {
         HBox outputRow = new HBox(8, new Label("出力先:"), outputDirField, chooseOutputDirButton);
         outputRow.setAlignment(Pos.CENTER_LEFT);
 
+        RadioButton formatHtml = new RadioButton("HTML");
+        formatHtml.setToggleGroup(exportFormatGroup);
+        formatHtml.setSelected(true);
+        formatHtml.setUserData(ExportFormat.HTML);
+        RadioButton formatCsv = new RadioButton("CSV");
+        formatCsv.setToggleGroup(exportFormatGroup);
+        formatCsv.setUserData(ExportFormat.CSV);
+        exportFormatGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> updateFileNameExtension());
+        HBox formatRow = new HBox(12, new Label("形式:"), formatHtml, formatCsv);
+        formatRow.setAlignment(Pos.CENTER_LEFT);
+
         fileNameField.setPromptText("実行すると自動入力されます（変更可）");
         HBox.setHgrow(fileNameField, Priority.ALWAYS);
-        HBox fileNameRow = new HBox(8, new Label("ファイル名:"), fileNameField);
+        HBox fileNameRow = new HBox(8, new Label("ファイル名:"), fileNameField, formatRow);
         fileNameRow.setAlignment(Pos.CENTER_LEFT);
 
         VBox bottomWrap = new VBox(8, outputRow, fileNameRow, actions);
@@ -315,6 +339,20 @@ public class StepCounterApp extends Application {
         return (StepMode) stepModeGroup.getSelectedToggle().getUserData();
     }
 
+    private ExportFormat currentExportFormat() {
+        return (ExportFormat) exportFormatGroup.getSelectedToggle().getUserData();
+    }
+
+    /** Swaps the file name field's extension to match the selected export format, keeping the base name. */
+    private void updateFileNameExtension() {
+        String name = fileNameField.getText();
+        if (name == null || name.isBlank()) {
+            return;
+        }
+        String base = name.contains(".") ? name.substring(0, name.lastIndexOf('.')) : name;
+        fileNameField.setText(base + "." + currentExportFormat().extension);
+    }
+
     private void onRun() {
         String repoUrl = repoUrlField.getText().trim();
         if (repoUrl.isEmpty()) {
@@ -423,7 +461,8 @@ public class StepCounterApp extends Application {
                         .sorted((a, b) -> Long.compare(b.getSteps(), a.getSteps()))
                         .toList());
         summaryLabel.setText(String.format("合計 %,d steps / %d ファイル", result.getTotalSteps(), result.getFileCount()));
-        fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranch()) + ".html");
+        fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranch())
+                + "." + currentExportFormat().extension);
         updateExportButtonState();
     }
 
@@ -436,7 +475,7 @@ public class StepCounterApp extends Application {
         summaryLabel.setText(String.format("追加 +%,d / 削除 -%,d / %d ファイル",
                 result.getTotalAdded(), result.getTotalDeleted(), result.getFiles().size()));
         fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranchA())
-                + "-vs-" + sanitizeFileNamePart(result.getBranchB()) + ".html");
+                + "-vs-" + sanitizeFileNamePart(result.getBranchB()) + "." + currentExportFormat().extension);
         updateExportButtonState();
     }
 
@@ -464,26 +503,35 @@ public class StepCounterApp extends Application {
             showAlert("先に出力先を選んでください。");
             return;
         }
-        String html;
-        if (lastScanResult != null) {
-            html = reportGenerator.buildFullReport(lastScanResult);
-        } else if (lastDiffResult != null) {
-            html = reportGenerator.buildDiffReport(lastDiffResult);
-        } else {
+        if (lastScanResult == null && lastDiffResult == null) {
             showAlert("先に実行してください。");
             return;
         }
+        ExportFormat format = currentExportFormat();
+        String content = switch (format) {
+            case HTML -> lastScanResult != null
+                    ? reportGenerator.buildFullReport(lastScanResult)
+                    : reportGenerator.buildDiffReport(lastDiffResult);
+            case CSV -> lastScanResult != null
+                    ? csvReportGenerator.buildFullCsv(lastScanResult)
+                    : csvReportGenerator.buildDiffCsv(lastDiffResult);
+        };
+
         String fileName = fileNameField.getText().trim();
         if (fileName.isEmpty()) {
             showAlert("ファイル名を入力してください。");
             return;
         }
-        if (!fileName.toLowerCase().endsWith(".html")) {
-            fileName = fileName + ".html";
+        String requiredSuffix = "." + format.extension;
+        if (!fileName.toLowerCase().endsWith(requiredSuffix)) {
+            fileName = fileName + requiredSuffix;
         }
         Path outFile = outputDirectory.resolve(fileName);
         try {
-            reportGenerator.write(html, outFile);
+            switch (format) {
+                case HTML -> reportGenerator.write(content, outFile);
+                case CSV -> csvReportGenerator.write(content, outFile);
+            }
             showAlert("レポートを出力しました: " + outFile);
         } catch (RuntimeException ex) {
             ErrorLogger.log("エクスポート", ex);
