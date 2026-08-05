@@ -72,6 +72,8 @@ public class StepCounterApp extends Application {
 
     private final TableView<FileStepResult> fullTable = new TableView<>();
     private final TableView<DiffFileResult> diffTable = new TableView<>();
+    private final TableColumn<DiffFileResult, Number> stepsACol = new TableColumn<>("全量(A)");
+    private final TableColumn<DiffFileResult, Number> stepsBCol = new TableColumn<>("全量(B)");
     private final Label summaryLabel = new Label();
     private final ProgressIndicator progress = new ProgressIndicator();
     private final Button runButton = new Button("実行");
@@ -288,12 +290,16 @@ public class StepCounterApp extends Application {
 
         TableColumn<DiffFileResult, String> dPathCol = new TableColumn<>("ファイル");
         dPathCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRelativePath()));
-        dPathCol.setPrefWidth(420);
+        dPathCol.setPrefWidth(360);
+        stepsACol.setCellValueFactory(data -> new javafx.beans.property.SimpleLongProperty(
+                data.getValue().getStepsA()));
+        stepsBCol.setCellValueFactory(data -> new javafx.beans.property.SimpleLongProperty(
+                data.getValue().getStepsB()));
         TableColumn<DiffFileResult, Number> addedCol = new TableColumn<>("追加");
         addedCol.setCellValueFactory(data -> new javafx.beans.property.SimpleIntegerProperty(data.getValue().getAdded()));
         TableColumn<DiffFileResult, Number> deletedCol = new TableColumn<>("削除");
         deletedCol.setCellValueFactory(data -> new javafx.beans.property.SimpleIntegerProperty(data.getValue().getDeleted()));
-        diffTable.getColumns().addAll(List.of(dPathCol, addedCol, deletedCol));
+        diffTable.getColumns().addAll(List.of(dPathCol, stepsACol, stepsBCol, addedCol, deletedCol));
         diffTable.setVisible(false);
         diffTable.setManaged(false);
 
@@ -425,6 +431,8 @@ public class StepCounterApp extends Application {
         this.lastDiffResult = result;
         this.lastScanResult = null;
         diffTable.getItems().setAll(result.getFiles());
+        stepsACol.setText("全量(" + result.getBranchA() + ")");
+        stepsBCol.setText("全量(" + result.getBranchB() + ")");
         summaryLabel.setText(String.format("追加 +%,d / 削除 -%,d / %d ファイル",
                 result.getTotalAdded(), result.getTotalDeleted(), result.getFiles().size()));
         fileNameField.setText(repoShortName(result.getRepoUrl()) + "-" + sanitizeFileNamePart(result.getBranchA())

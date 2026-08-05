@@ -45,11 +45,13 @@ public final class EndToEndSmokeRunner {
 
         System.out.println("== diff (FULL mode) ==");
         List<DiffFileResult> diffsFull = diffCounter.compare(rootA, rootB, template, template.getDefaultExcludes(), StepMode.FULL);
-        diffsFull.forEach(d -> System.out.printf("  %s  +%d -%d%n", d.getRelativePath(), d.getAdded(), d.getDeleted()));
+        diffsFull.forEach(d -> System.out.printf("  %s  A=%d B=%d  +%d -%d%n",
+                d.getRelativePath(), d.getStepsA(), d.getStepsB(), d.getAdded(), d.getDeleted()));
 
         System.out.println("== diff (SUBSTANTIVE mode) ==");
         List<DiffFileResult> diffsSubstantive = diffCounter.compare(rootA, rootB, template, template.getDefaultExcludes(), StepMode.SUBSTANTIVE);
-        diffsSubstantive.forEach(d -> System.out.printf("  %s  +%d -%d%n", d.getRelativePath(), d.getAdded(), d.getDeleted()));
+        diffsSubstantive.forEach(d -> System.out.printf("  %s  A=%d B=%d  +%d -%d%n",
+                d.getRelativePath(), d.getStepsA(), d.getStepsB(), d.getAdded(), d.getDeleted()));
 
         git.cleanup(workDir);
         System.out.println("== cleanup done ==");

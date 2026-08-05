@@ -37,9 +37,9 @@ public final class ReportPreviewGenerator {
         gen.write(gen.buildFullReport(scan), Path.of(outDir, "preview-full.html"));
 
         List<DiffFileResult> diffs = List.of(
-                new DiffFileResult("src/main/java/com/example/order/OrderService.java", 128, 64),
-                new DiffFileResult("src/main/java/com/example/pricing/PricingEngine.java", 52, 9),
-                new DiffFileResult("src/main/java/com/example/order/OrderValidator.java", 0, 31)
+                new DiffFileResult("src/main/java/com/example/order/OrderService.java", 842, 906, 128, 64),
+                new DiffFileResult("src/main/java/com/example/pricing/PricingEngine.java", 588, 631, 52, 9),
+                new DiffFileResult("src/main/java/com/example/order/OrderValidator.java", 176, 145, 0, 31)
         );
         DiffResult diff = new DiffResult(
                 "https://example.com/acme-orders.git", "main", "feature/order-refactor", "Java",

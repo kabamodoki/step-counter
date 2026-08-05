@@ -57,7 +57,8 @@ public class DiffCounter {
                 deleted += delta.getSource().size();
             }
             if (added > 0 || deleted > 0) {
-                results.add(new DiffFileResult(relative.toString().replace('\\', '/'), added, deleted));
+                results.add(new DiffFileResult(relative.toString().replace('\\', '/'),
+                        linesA.size(), linesB.size(), added, deleted));
             }
         }
         results.sort((a, b) -> Integer.compare(b.getAdded() + b.getDeleted(), a.getAdded() + a.getDeleted()));

@@ -132,10 +132,14 @@ public class HtmlReportGenerator {
                 .map(f -> """
                         <div class="diff-row">
                           <span class="file">%s</span>
+                          <span class="step-total">%,d</span>
+                          <span class="step-arrow">→</span>
+                          <span class="step-total">%,d</span>
                           <span class="pill-add">+%d</span>
                           <span class="pill-del">−%d</span>
                         </div>
-                        """.formatted(escape(f.getRelativePath()), f.getAdded(), f.getDeleted()))
+                        """.formatted(escape(f.getRelativePath()), f.getStepsA(), f.getStepsB(),
+                        f.getAdded(), f.getDeleted()))
                 .collect(Collectors.joining());
 
         return page(
@@ -151,10 +155,19 @@ public class HtmlReportGenerator {
                     <span class="hint">%s → %s</span>
                   </div>
                   <div class="diff-grid">
+                    <div class="diff-row diff-row-head">
+                      <span>ファイル</span>
+                      <span class="step-total">全量(%s)</span>
+                      <span></span>
+                      <span class="step-total">全量(%s)</span>
+                      <span>追加</span>
+                      <span>削除</span>
+                    </div>
                     %s
                   </div>
                 </section>
-                """.formatted(escape(result.getBranchA()), escape(result.getBranchB()), rows));
+                """.formatted(escape(result.getBranchA()), escape(result.getBranchB()),
+                        escape(result.getBranchA()), escape(result.getBranchB()), rows));
     }
 
     public void write(String html, Path outFile) {
@@ -320,8 +333,11 @@ public class HtmlReportGenerator {
             @keyframes grow{ from{ width:0; } }
             @media (prefers-reduced-motion: reduce){ .title{ animation:none; } .bar-fill{ animation:none; width:var(--w,0%); } }
             .diff-grid{ display:flex; flex-direction:column; gap:10px; }
-            .diff-row{ display:grid; grid-template-columns:minmax(0,1.4fr) 90px 90px; gap:14px; align-items:center; }
+            .diff-row{ display:grid; grid-template-columns:minmax(0,1.1fr) 70px 18px 70px 70px 70px; gap:10px; align-items:center; }
             .diff-row .file{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .diff-row-head{ font:700 11px/1 var(--font-body); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim); }
+            .step-total{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:right; color:var(--ink); }
+            .step-arrow{ text-align:center; color:var(--ink-dim); }
             .pill-add, .pill-del{ font-family:var(--font-mono); font-weight:700; font-size:12.5px; padding:4px 8px; border-radius:7px; text-align:center; }
             .pill-add{ color:var(--good); background:rgba(78,224,138,.12); }
             .pill-del{ color:var(--bad); background:rgba(255,107,107,.12); }
