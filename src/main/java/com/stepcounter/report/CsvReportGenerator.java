@@ -1,5 +1,6 @@
 package com.stepcounter.report;
 
+import com.stepcounter.model.CommitInfo;
 import com.stepcounter.model.DiffFileResult;
 import com.stepcounter.model.DiffResult;
 import com.stepcounter.model.FileStepResult;
@@ -23,22 +24,24 @@ public class CsvReportGenerator {
                 .sorted((a, b) -> Long.compare(b.getSteps(), a.getSteps()))
                 .toList();
         StringBuilder sb = new StringBuilder(BOM);
-        sb.append("ファイルパス,ステップ数").append(NEWLINE);
+        sb.append("ファイルパス,ステップ数,最終更新者,最終更新日時,コミットメッセージ").append(NEWLINE);
         for (FileStepResult f : sorted) {
-            sb.append(csvField(f.getRelativePath())).append(',').append(f.getSteps()).append(NEWLINE);
+            sb.append(csvField(f.getRelativePath())).append(',').append(f.getSteps())
+                    .append(commitFields(f.getLastCommit())).append(NEWLINE);
         }
         return sb.toString();
     }
 
     public String buildDiffCsv(DiffResult result) {
         StringBuilder sb = new StringBuilder(BOM);
-        sb.append("ファイルパス,全量(A),全量(B),追加,削除").append(NEWLINE);
+        sb.append("ファイルパス,全量(A),全量(B),追加,削除,最終更新者,最終更新日時,コミットメッセージ").append(NEWLINE);
         for (DiffFileResult f : result.getFiles()) {
             sb.append(csvField(f.getRelativePath())).append(',')
                     .append(f.getStepsA()).append(',')
                     .append(f.getStepsB()).append(',')
                     .append(f.getAdded()).append(',')
-                    .append(f.getDeleted()).append(NEWLINE);
+                    .append(f.getDeleted())
+                    .append(commitFields(f.getLastCommit())).append(NEWLINE);
         }
         return sb.toString();
     }
@@ -50,6 +53,11 @@ public class CsvReportGenerator {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write CSV to " + outFile, e);
         }
+    }
+
+    /** The trailing ",author,date,message" columns. */
+    private String commitFields(CommitInfo c) {
+        return "," + csvField(c.author()) + "," + csvField(c.date()) + "," + csvField(c.message());
     }
 
     /** Quotes a field if it contains a comma, quote, or newline, doubling any embedded quotes. */

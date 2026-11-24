@@ -85,6 +85,9 @@ public class HtmlReportGenerator {
                           <th data-sort="name">ファイル</th>
                           <th class="num" data-sort="steps">ステップ</th>
                           <th>比率</th>
+                          <th data-sort="author">最終更新者</th>
+                          <th data-sort="date">最終更新日時</th>
+                          <th>コミットメッセージ</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -137,9 +140,11 @@ public class HtmlReportGenerator {
                           <span class="step-total">%,d</span>
                           <span class="pill-add">+%d</span>
                           <span class="pill-del">−%d</span>
+                          <span class="commit-line"><span class="author">%s</span><span class="date">%s</span><span class="msg">%s</span></span>
                         </div>
                         """.formatted(escape(f.getRelativePath()), f.getStepsA(), f.getStepsB(),
-                        f.getAdded(), f.getDeleted()))
+                        f.getAdded(), f.getDeleted(), escape(f.getLastCommit().author()),
+                        escape(f.getLastCommit().date()), escape(f.getLastCommit().message())))
                 .collect(Collectors.joining());
 
         return page(
@@ -196,8 +201,13 @@ public class HtmlReportGenerator {
                       <td class="file">%s</td>
                       <td class="num steps">%,d</td>
                       <td class="bar-cell"><div class="bar-track"><div class="bar-fill" style="--w:%.0f%%"></div></div></td>
+                      <td class="author">%s</td>
+                      <td class="date">%s</td>
+                      <td class="msg">%s</td>
                     </tr>
-                    """.formatted(rowClass, rank, escape(f.getRelativePath()), f.getSteps(), widthPct));
+                    """.formatted(rowClass, rank, escape(f.getRelativePath()), f.getSteps(), widthPct,
+                    escape(f.getLastCommit().author()), escape(f.getLastCommit().date()),
+                    escape(f.getLastCommit().message())));
         }
         return sb.toString();
     }
@@ -335,6 +345,15 @@ public class HtmlReportGenerator {
             .diff-grid{ display:flex; flex-direction:column; gap:10px; }
             .diff-row{ display:grid; grid-template-columns:minmax(0,1.1fr) 70px 18px 70px 70px 70px; gap:10px; align-items:center; }
             .diff-row .file{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .table-scroll table{ min-width:960px; }
+            td.author, td.date{ white-space:nowrap; font-size:13px; color:var(--ink-dim); }
+            td.date{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+            td.msg{ font-size:13px; color:var(--ink-dim); max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .commit-line{ grid-column:1 / -1; display:flex; gap:14px; align-items:baseline; min-width:0;
+              font-size:12.5px; color:var(--ink-dim); margin-top:-4px; padding-bottom:8px; border-bottom:1px solid rgba(50,42,84,.6); }
+            .commit-line .author{ color:var(--ink); white-space:nowrap; }
+            .commit-line .date{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+            .commit-line .msg{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
             .diff-row-head{ font:700 11px/1 var(--font-body); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-dim); }
             .step-total{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:right; color:var(--ink); }
             .step-arrow{ text-align:center; color:var(--ink-dim); }
@@ -362,8 +381,9 @@ public class HtmlReportGenerator {
                       av = parseInt(a.querySelector('.steps').textContent.replace(/,/g, ''), 10);
                       bv = parseInt(b.querySelector('.steps').textContent.replace(/,/g, ''), 10);
                     } else {
-                      av = a.querySelector('.file').textContent;
-                      bv = b.querySelector('.file').textContent;
+                      var cls = key === 'name' ? '.file' : '.' + key;
+                      av = a.querySelector(cls).textContent;
+                      bv = b.querySelector(cls).textContent;
                     }
                     if (av < bv) return dir[key] ? 1 : -1;
                     if (av > bv) return dir[key] ? -1 : 1;

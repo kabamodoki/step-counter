@@ -36,7 +36,11 @@ public final class EndToEndSmokeRunner {
         Path rootA = git.fetchBranch(repoPath, branchA, workDir, "a");
         List<Path> filesA = scanner.scan(rootA, template.getDefaultExcludes());
         System.out.println(branchA + ": " + filesA.size() + " files after exclude filtering");
-        filesA.forEach(f -> System.out.println("  " + f));
+        var lastCommitsA = git.lastCommits(rootA,
+                filesA.stream().map(f -> f.toString().replace(java.io.File.separatorChar, '/')).toList());
+        filesA.forEach(f -> System.out.println("  " + f + "  <- "
+                + lastCommitsA.get(f.toString().replace(java.io.File.separatorChar, '/'))));
+        System.out.println("last commit found for " + lastCommitsA.size() + " / " + filesA.size() + " files");
 
         System.out.println("== fetching " + branchB + " ==");
         Path rootB = git.fetchBranch(repoPath, branchB, workDir, "b");

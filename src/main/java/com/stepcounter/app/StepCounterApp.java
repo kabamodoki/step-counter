@@ -3,6 +3,7 @@ package com.stepcounter.app;
 import com.stepcounter.counter.LineCounter;
 import com.stepcounter.diff.DiffCounter;
 import com.stepcounter.git.GitOperationService;
+import com.stepcounter.model.CommitInfo;
 import com.stepcounter.model.DiffFileResult;
 import com.stepcounter.model.DiffResult;
 import com.stepcounter.model.FileStepResult;
@@ -48,7 +49,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 public class StepCounterApp extends Application {
 
@@ -110,7 +113,7 @@ public class StepCounterApp extends Application {
     @Override
     public void start(Stage stage) {
         stage.setTitle("Step Counter");
-        stage.setScene(new Scene(buildRoot(), 900, 720));
+        stage.setScene(new Scene(buildRoot(), 1200, 720));
         stage.show();
     }
 
@@ -311,6 +314,7 @@ public class StepCounterApp extends Application {
                 data.getValue().getSteps()).asObject());
         fullTable.getColumns().add(pathCol);
         fullTable.getColumns().add(stepsCol);
+        addCommitColumns(fullTable, FileStepResult::getLastCommit);
 
         TableColumn<DiffFileResult, String> dPathCol = new TableColumn<>("ファイル");
         dPathCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRelativePath()));
@@ -324,6 +328,7 @@ public class StepCounterApp extends Application {
         TableColumn<DiffFileResult, Number> deletedCol = new TableColumn<>("削除");
         deletedCol.setCellValueFactory(data -> new javafx.beans.property.SimpleIntegerProperty(data.getValue().getDeleted()));
         diffTable.getColumns().addAll(List.of(dPathCol, stepsACol, stepsBCol, addedCol, deletedCol));
+        addCommitColumns(diffTable, DiffFileResult::getLastCommit);
         diffTable.setVisible(false);
         diffTable.setManaged(false);
 
@@ -409,6 +414,8 @@ public class StepCounterApp extends Application {
                 try {
                     checkout = gitService.fetchBranch(repoUrl, branch, workDir, "full");
                     List<Path> files = fileScanner.scan(checkout, excludes);
+                    Map<String, CommitInfo> lastCommits = gitService.lastCommits(checkout,
+                            files.stream().map(StepCounterApp::toRepoPath).toList());
                     List<FileStepResult> results = new ArrayList<>();
                     long substantiveTotal = 0;
                     StepMode otherMode = mode == StepMode.FULL ? StepMode.SUBSTANTIVE : StepMode.FULL;
@@ -416,7 +423,8 @@ public class StepCounterApp extends Application {
                         Path abs = checkout.resolve(relative);
                         var style = template.styleFor(relative.getFileName().toString());
                         long steps = lineCounter.count(abs, style, mode);
-                        results.add(new FileStepResult(relative.toString().replace('\\', '/'), steps));
+                        String repoPath = toRepoPath(relative);
+                        results.add(new FileStepResult(repoPath, steps, lastCommits.get(repoPath)));
                         substantiveTotal += lineCounter.count(abs, style, otherMode);
                     }
                     ScanResult scanResult = new ScanResult(repoUrl, branch, templateType.toString(), mode,
@@ -441,7 +449,8 @@ public class StepCounterApp extends Application {
                 try {
                     Path rootA = gitService.fetchBranch(repoUrl, branchA, workDir, "a");
                     Path rootB = gitService.fetchBranch(repoUrl, branchB, workDir, "b");
-                    List<DiffFileResult> diffs = diffCounter.compare(rootA, rootB, template, excludes, mode);
+                    List<DiffFileResult> diffs = withLastCommits(
+                            diffCounter.compare(rootA, rootB, template, excludes, mode), rootA, rootB);
                     DiffResult diffResult = new DiffResult(repoUrl, branchA, branchB, templateType.toString(),
                             mode, excludes, diffs);
                     Platform.runLater(() -> applyDiffResult(diffResult));
@@ -451,6 +460,36 @@ public class StepCounterApp extends Application {
                 return null;
             }
         };
+    }
+
+    /** Repo-relative path in git's form ('/'-separated), which is also how results display paths. */
+    private static String toRepoPath(Path relative) {
+        return relative.toString().replace('\\', '/');
+    }
+
+    /** Attaches each file's last commit from branch B's history, falling back to branch A's (e.g. A-only files). */
+    private List<DiffFileResult> withLastCommits(List<DiffFileResult> diffs, Path rootA, Path rootB) {
+        List<String> paths = diffs.stream().map(DiffFileResult::getRelativePath).toList();
+        Map<String, CommitInfo> fromB = gitService.lastCommits(rootB, paths);
+        List<String> missing = paths.stream().filter(p -> !fromB.containsKey(p)).toList();
+        Map<String, CommitInfo> fromA = gitService.lastCommits(rootA, missing);
+        return diffs.stream()
+                .map(d -> d.withLastCommit(fromB.getOrDefault(d.getRelativePath(), fromA.get(d.getRelativePath()))))
+                .toList();
+    }
+
+    /** Adds the three last-commit columns (author / date / message) shared by both result tables. */
+    private static <T> void addCommitColumns(TableView<T> table, Function<T, CommitInfo> commitOf) {
+        TableColumn<T, String> authorCol = new TableColumn<>("最終更新者");
+        authorCol.setCellValueFactory(data -> new SimpleStringProperty(commitOf.apply(data.getValue()).author()));
+        authorCol.setPrefWidth(110);
+        TableColumn<T, String> dateCol = new TableColumn<>("最終更新日時");
+        dateCol.setCellValueFactory(data -> new SimpleStringProperty(commitOf.apply(data.getValue()).date()));
+        dateCol.setPrefWidth(140);
+        TableColumn<T, String> messageCol = new TableColumn<>("コミットメッセージ");
+        messageCol.setCellValueFactory(data -> new SimpleStringProperty(commitOf.apply(data.getValue()).message()));
+        messageCol.setPrefWidth(300);
+        table.getColumns().addAll(List.of(authorCol, dateCol, messageCol));
     }
 
     private void applyFullResult(ScanResult result) {

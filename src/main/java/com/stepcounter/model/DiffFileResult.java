@@ -6,13 +6,24 @@ public class DiffFileResult {
     private final long stepsB;
     private final int added;
     private final int deleted;
+    private final CommitInfo lastCommit;
 
     public DiffFileResult(String relativePath, long stepsA, long stepsB, int added, int deleted) {
+        this(relativePath, stepsA, stepsB, added, deleted, CommitInfo.NONE);
+    }
+
+    public DiffFileResult(String relativePath, long stepsA, long stepsB, int added, int deleted, CommitInfo lastCommit) {
         this.relativePath = relativePath;
         this.stepsA = stepsA;
         this.stepsB = stepsB;
         this.added = added;
         this.deleted = deleted;
+        this.lastCommit = lastCommit == null ? CommitInfo.NONE : lastCommit;
+    }
+
+    /** Returns a copy of this result carrying the given last-commit info. */
+    public DiffFileResult withLastCommit(CommitInfo commit) {
+        return new DiffFileResult(relativePath, stepsA, stepsB, added, deleted, commit);
     }
 
     public String getRelativePath() {
@@ -39,5 +50,10 @@ public class DiffFileResult {
 
     public int getNetChange() {
         return added - deleted;
+    }
+
+    /** The last commit that touched this file (branch B's history, falling back to A's). Never null. */
+    public CommitInfo getLastCommit() {
+        return lastCommit;
     }
 }
